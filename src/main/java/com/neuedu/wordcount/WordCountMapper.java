@@ -25,5 +25,6 @@ public class WordCountMapper extends Mapper<LongWritable, Text, Text, IntWritabl
             TEXT.set(words.nextToken());
             context.write(TEXT, INT);
         }
+
     }
 }

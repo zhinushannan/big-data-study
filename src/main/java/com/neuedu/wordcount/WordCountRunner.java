@@ -42,6 +42,8 @@ public class WordCountRunner {
         job.setMapperClass(WordCountMapper.class);
         job.setMapOutputKeyClass(Text.class);
         job.setMapOutputValueClass(IntWritable.class);
+        // 设置归并
+        job.setCombinerClass(WordCountCombiner.class);
         // 设置Reducer类
         job.setReducerClass(WordCountReducer.class);
         // 配置输出的键值类型

@@ -3,6 +3,7 @@ package club.kwcoder.flowsum;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
@@ -35,12 +36,12 @@ public class FlowRunner {
         FileInputFormat.setInputPaths(job, input);
         // 配置Mapper
         job.setMapperClass(FlowMapper.class);
-        job.setMapOutputKeyClass(Text.class);
-        job.setMapOutputValueClass(FlowWritable.class);
+        job.setMapOutputKeyClass(FlowWritable.class);
+        job.setMapOutputValueClass(Text.class);
         // 配置Reducer
         job.setReducerClass(FlowReducer.class);
-        job.setOutputKeyClass(Text.class);
-        job.setOutputValueClass(FlowWritable.class);
+        job.setOutputKeyClass(FlowWritable.class);
+        job.setOutputValueClass(NullWritable.class);
         // 配置输出
         job.setOutputFormatClass(TextOutputFormat.class);
         FileOutputFormat.setOutputPath(job, output);
