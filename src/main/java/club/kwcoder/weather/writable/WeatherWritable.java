@@ -1,4 +1,4 @@
-package club.kwcoder.weather;
+package club.kwcoder.weather.writable;
 
 import org.apache.hadoop.io.WritableComparable;
 
@@ -124,7 +124,7 @@ public class WeatherWritable implements WritableComparable<WeatherWritable> {
 
     @Override
     public String toString() {
-        return code + '\t' + date + '\t' + precipitation + '\t' + maxTemperature + '\t' + minTemperature + '\t' + avgTemperature + '\t';
+        return code + '\t' + date + '\t' + precipitation + '\t' + maxTemperature + '\t' + minTemperature + '\t' + avgTemperature;
     }
 
     @Override

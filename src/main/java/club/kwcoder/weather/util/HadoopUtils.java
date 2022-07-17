@@ -1,4 +1,4 @@
-package club.kwcoder.weather;
+package club.kwcoder.weather.util;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
@@ -10,10 +10,21 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
+/**
+ * Hadoop 工具类
+ * @author zhinushannan
+ */
 public class HadoopUtils {
 
-    private static Configuration conf;
-    private static FileSystem hdfs;
+    /**
+     * hadoop配置
+     */
+    private static final Configuration conf;
+
+    /**
+     * hdfs文件系统
+     */
+    private static final FileSystem hdfs;
 
     static {
         conf = new Configuration();
@@ -24,6 +35,10 @@ public class HadoopUtils {
         }
     }
 
+    /**
+     * 若指定目标路径存在，则删除
+     * @param targetPath 指定目标路径
+     */
     public static void deleteIfExist(Path targetPath) {
         try {
             if (hdfs.exists(targetPath)) {
@@ -34,6 +49,10 @@ public class HadoopUtils {
         }
     }
 
+    /**
+     * 打印指定路径下的文件内容
+     * @param path 指定路径
+     */
     public static void showAllFiles(Path path) {
 
         FSDataInputStream open = null;
@@ -52,7 +71,6 @@ public class HadoopUtils {
                     inputStreamReader = new InputStreamReader(open);
                     bufferedReader = new BufferedReader(inputStreamReader);
                     bufferedReader.lines().forEach(System.out::println);
-
                 }
             }
         } catch (IOException e) {

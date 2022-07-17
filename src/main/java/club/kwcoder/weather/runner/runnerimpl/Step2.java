@@ -1,5 +1,9 @@
-package club.kwcoder.weather;
+package club.kwcoder.weather.runner.runnerimpl;
 
+import club.kwcoder.weather.WeatherStarter;
+import club.kwcoder.weather.runner.Runner;
+import club.kwcoder.weather.writable.WeatherWritable;
+import club.kwcoder.weather.util.HadoopUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -18,8 +22,12 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import java.io.IOException;
 import java.util.Scanner;
 
-public class Step2 {
+public class Step2 implements Runner {
 
+    @Override
+    public void run(WeatherStarter.RunnerBuilder builder) {
+
+    }
 
     public static void main(String[] args) {
 

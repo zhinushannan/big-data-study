@@ -1,9 +1,10 @@
-package club.kwcoder.weather;
+package club.kwcoder.weather.runner.runnerimpl;
 
+import club.kwcoder.weather.WeatherStarter;
+import club.kwcoder.weather.util.ValidateUtils;
+import club.kwcoder.weather.writable.WeatherWritable;
+import club.kwcoder.weather.runner.Runner;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
@@ -20,52 +21,40 @@ import java.io.IOException;
 /**
  * 第一步：数据清洗，数据验证，数据导入，三行合一
  */
-public class Step1 {
+public class DataCleaning implements Runner {
 
-    public static void main(String[] args) {
-
+    @Override
+    public void run(WeatherStarter.RunnerBuilder builder) {
         try {
-            Configuration conf = new Configuration();
-            FileSystem hdfs = FileSystem.get(conf);
-
-            Path input = new Path("/weather/conventional_weather_stations_inmet_brazil_1961_2019.csv");
-            Path output = new Path("/weather_result1");
-
-            Job job = Job.getInstance(conf, "weather_step1");
+            Job job = Job.getInstance(builder.getConf(), builder.getJobName());
             // 设置执行类
-            job.setJarByClass(Step1.class);
+            job.setJarByClass(DataCleaning.class);
             // 设置输入
             job.setInputFormatClass(TextInputFormat.class);
-            FileInputFormat.setInputPaths(job, input);
+            FileInputFormat.setInputPaths(job, builder.getInput());
             // 设置Mapper
-            job.setMapperClass(Step1Mapper.class);
+            job.setMapperClass(DataCleanMapper.class);
             job.setMapOutputKeyClass(Text.class);
             job.setMapOutputValueClass(WeatherWritable.class);
             // 设置Reducer
-            job.setReducerClass(Step1Reducer.class);
+            job.setReducerClass(DataCleanReducer.class);
             job.setOutputKeyClass(WeatherWritable.class);
             job.setOutputValueClass(NullWritable.class);
             // 设置输出
             job.setOutputFormatClass(TextOutputFormat.class);
-            FileOutputFormat.setOutputPath(job, output);
+            FileOutputFormat.setOutputPath(job, builder.getOutput());
             // 运行
             boolean flag = job.waitForCompletion(true);
             if (flag) {
-                System.out.println("step process success");
+                System.out.println(builder.getJobName() + " process success");
             }
-
-            HadoopUtils.showAllFiles(output);
-
         } catch (IOException | InterruptedException | ClassNotFoundException e) {
             e.printStackTrace();
         }
 
-
-
     }
 
-
-    private static class Step1Mapper extends Mapper<LongWritable, Text, Text, WeatherWritable> {
+    private static class DataCleanMapper extends Mapper<LongWritable, Text, Text, WeatherWritable> {
 
         /*
          Estacao;Data;Hora;Precipitacao;TempBulboSeco;TempBulboUmido;TempMaxima;TempMinima;UmidadeRelativa;PressaoAtmEstacao;PressaoAtmMar;DirecaoVento;VelocidadeVento;Insolacao;Nebulosidade;Evaporacao Piche;Temp Comp Media;Umidade Relativa Media;Velocidade do Vento Media;
@@ -79,7 +68,7 @@ public class Step1 {
         @Override
         protected void map(LongWritable key, Text value, Mapper<LongWritable, Text, Text, WeatherWritable>.Context context) throws IOException, InterruptedException {
             String line = value.toString();
-            if (StringUtils.isBlank(line)) {
+            if (ValidateUtils.validate(line)) {
                 return;
             }
             // 跳过标题行：key为0指的是每一块的第一个字符，不是整个文件的，不能只使用key判断
@@ -96,7 +85,7 @@ public class Step1 {
              */
             String[] items = line.split(";", 19);
             // 块切分时可能会把一行切在两块中
-            if (items.length != 19) {
+            if (ValidateUtils.validate(items, 19)) {
                 return;
             }
             WeatherWritable weatherWritable = builder
@@ -113,7 +102,7 @@ public class Step1 {
         }
     }
 
-    private static class Step1Reducer extends Reducer<Text, WeatherWritable, WeatherWritable, NullWritable> {
+    private static class DataCleanReducer extends Reducer<Text, WeatherWritable, WeatherWritable, NullWritable> {
 
         WeatherWritable.Builder builder = new WeatherWritable.Builder();
 
@@ -130,7 +119,6 @@ public class Step1 {
                 minTemp = minTemp + value.getMinTemperature();
                 avgTemp = avgTemp + value.getAvgTemperature();
             }
-
             // 数据验证
             if (avgTemp > maxTemp || avgTemp < minTemp) {
                 return;
