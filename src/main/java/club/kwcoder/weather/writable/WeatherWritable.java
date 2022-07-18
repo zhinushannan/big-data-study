@@ -1,13 +1,17 @@
 package club.kwcoder.weather.writable;
 
 import org.apache.hadoop.io.WritableComparable;
+import org.apache.hadoop.mapred.lib.db.DBWritable;
 
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.Objects;
 
-public class WeatherWritable implements WritableComparable<WeatherWritable> {
+public class WeatherWritable implements WritableComparable<WeatherWritable>, DBWritable {
 
     /**
      * 气象站代码
@@ -34,6 +38,31 @@ public class WeatherWritable implements WritableComparable<WeatherWritable> {
      * 平均温度
      */
     private Float avgTemperature;
+
+
+    public static final String tableName = "weather";
+    public static final String[] fields = {"code", "date", "precipitation", "maxTemperature",
+            "minTemperature", "avgTemperature"};
+
+    @Override
+    public void write(PreparedStatement statement) throws SQLException {
+        statement.setString(1, this.code);
+        statement.setString(2, this.date);
+        statement.setFloat(3, this.precipitation);
+        statement.setFloat(4, this.maxTemperature);
+        statement.setFloat(5, this.minTemperature);
+        statement.setFloat(6, this.avgTemperature);
+    }
+
+    @Override
+    public void readFields(ResultSet resultSet) throws SQLException {
+        this.code = resultSet.getString(1);
+        this.date = resultSet.getString(2);
+        this.precipitation = resultSet.getFloat(3);
+        this.maxTemperature = resultSet.getFloat(4);
+        this.minTemperature = resultSet.getFloat(5);
+        this.avgTemperature = resultSet.getFloat(6);
+    }
 
     public static class Builder {
         private String code;
@@ -77,7 +106,8 @@ public class WeatherWritable implements WritableComparable<WeatherWritable> {
             return new WeatherWritable(this);
         }
 
-        public Builder() {}
+        public Builder() {
+        }
 
     }
 

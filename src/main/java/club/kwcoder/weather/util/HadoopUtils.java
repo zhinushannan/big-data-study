@@ -26,6 +26,9 @@ public class HadoopUtils {
      */
     private static final FileSystem hdfs;
 
+
+
+
     static {
         conf = new Configuration();
         try {
@@ -107,4 +110,5 @@ public class HadoopUtils {
     public static FileSystem getHdfs() {
         return hdfs;
     }
+
 }

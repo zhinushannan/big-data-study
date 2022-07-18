@@ -1,37 +1,73 @@
-package club.kwcoder.weather.runner.runnerimpl;
+package club.kwcoder.weather.runner;
 
 import club.kwcoder.weather.WeatherStarter;
+import club.kwcoder.weather.util.HadoopUtils;
 import club.kwcoder.weather.util.ValidateUtils;
 import club.kwcoder.weather.writable.WeatherWritable;
-import club.kwcoder.weather.runner.Runner;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapred.lib.db.DBOutputFormat;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.mapreduce.lib.db.DBConfiguration;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
-import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
-import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.Statement;
 
 /**
  * 第一步：数据清洗，数据验证，数据导入，三行合一
+ * 输出格式：监测站代码、日期、降水量、最高温度、最低温度、平均温度
  */
-public class DataCleaning implements Runner {
+public class DataCleaning {
 
-    @Override
-    public void run(WeatherStarter.RunnerBuilder builder) {
+    public static void runner() {
+        Configuration conf = HadoopUtils.getConf();
+        DBConfiguration.configureDB(
+                conf,
+                WeatherStarter.MysqlDriverClass,
+                WeatherStarter.MysqlUrl,
+                WeatherStarter.username,
+                WeatherStarter.password
+        );
+
+        Connection connection = null;
+        Statement statement = null;
         try {
-            Job job = Job.getInstance(builder.getConf(), builder.getJobName());
+            Class.forName(WeatherStarter.MysqlDriverClass);
+            connection = DriverManager.getConnection(WeatherStarter.MysqlUrl, WeatherStarter.username, WeatherStarter.password);
+            statement = connection.createStatement();
+            String sql = "delete from weather where 1=1";
+            statement.executeQuery(sql);
+        } catch (Exception ignore) {
+        } finally {
+            if (statement != null) {
+                try {
+                    statement.close();
+                } catch (SQLException ignore) {}
+            }
+            if (connection != null) {
+                try {
+                    connection.close();
+                } catch (SQLException ignore) {}
+            }
+        }
+
+        try {
+            Job job = Job.getInstance(conf, "data_cleaning");
             // 设置执行类
             job.setJarByClass(DataCleaning.class);
             // 设置输入
             job.setInputFormatClass(TextInputFormat.class);
-            FileInputFormat.setInputPaths(job, builder.getInput());
+            FileInputFormat.setInputPaths(job, "/weather");
             // 设置Mapper
             job.setMapperClass(DataCleanMapper.class);
             job.setMapOutputKeyClass(Text.class);
@@ -41,12 +77,16 @@ public class DataCleaning implements Runner {
             job.setOutputKeyClass(WeatherWritable.class);
             job.setOutputValueClass(NullWritable.class);
             // 设置输出
-            job.setOutputFormatClass(TextOutputFormat.class);
-            FileOutputFormat.setOutputPath(job, builder.getOutput());
+            job.setOutputFormatClass(DBOutputFormat.class);
+            DBOutputFormat.setOutput(
+                    job,
+                    WeatherWritable.tableName,
+                    WeatherWritable.fields
+            );
             // 运行
             boolean flag = job.waitForCompletion(true);
             if (flag) {
-                System.out.println(builder.getJobName() + " process success");
+                System.out.println("data_cleaning process success");
             }
         } catch (IOException | InterruptedException | ClassNotFoundException e) {
             e.printStackTrace();
@@ -134,6 +174,5 @@ public class DataCleaning implements Runner {
             context.write(weatherWritable, NullWritable.get());
         }
     }
-
 
 }
